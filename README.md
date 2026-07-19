@@ -109,13 +109,14 @@ git diff -- generated
 .\scripts\restore-backup.ps1 -List
 ```
 
-For the complete Codex build, verification, preview, installation, and installed-verification sequence, use the one-command wrapper:
+For the complete build, verification, preview, installation, and installed-verification sequence, use the runtime-specific one-command wrapper:
 
 ```powershell
 .\scripts\update-codex-agent.ps1
+.\scripts\update-claude-agent.ps1
 ```
 
-The wrapper stops on the first failed step and reminds you to restart Codex after a successful update.
+Each wrapper stops on the first failed step and reminds you to restart its runtime after a successful update.
 
 `-Runtime All` is appropriate for build and verification. Installation should be performed one runtime at a time. Where installation accepts `-Runtime All`, it runs sequentially and does not provide an all-or-nothing transaction.
 
