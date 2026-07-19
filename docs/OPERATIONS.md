@@ -9,16 +9,32 @@ cd "$env:USERPROFILE\agent-system"
 
 ---
 
-## One-command runtime updates
+## One-command update for Codex and Claude Code
 
-Use these wrappers after changing shared instructions, configuration, adapters, or generated runtime behavior:
+Use this after changing shared instructions, configuration, adapters, or generated runtime behavior:
+
+```powershell
+.\scripts\update-all-agents.ps1
+```
+
+The combined wrapper runs the existing runtime-specific workflows sequentially:
+
+1. update and verify Codex;
+2. stop immediately if Codex fails;
+3. update and verify Claude Code;
+4. stop immediately if Claude Code fails;
+5. report final success and restart guidance.
+
+The operation is sequential, not transactional. Codex may complete successfully before a later Claude Code failure.
+
+Use an individual wrapper when only one runtime needs updating:
 
 ```powershell
 .\scripts\update-codex-agent.ps1
 .\scripts\update-claude-agent.ps1
 ```
 
-Each wrapper runs the supported single-runtime workflow in order:
+Each runtime wrapper performs:
 
 1. build the runtime artifact;
 2. verify generated output;
@@ -26,7 +42,7 @@ Each wrapper runs the supported single-runtime workflow in order:
 4. install the runtime artifact;
 5. verify the installed copy.
 
-The wrappers stop immediately on failure and return a non-zero exit code. Restart the relevant runtime after a successful update so new sessions load the installed instructions.
+All wrappers stop immediately on failure and return a non-zero exit code. Restart the updated runtime after success so new sessions load the installed instructions.
 
 ---
 
@@ -152,21 +168,11 @@ Tests never install to real `.codex` / `.claude` / `.gemini` paths.
 cd "$env:USERPROFILE\agent-system"
 
 # 1. Edit shared source only (core/ workflows/ capabilities/ memory/ config/ adapters/).
-# 2. Rebuild and verify.
-.\scripts\build-agent.ps1 -Runtime All
-.\scripts\verify-agent.ps1
+# 2. Pull current repository changes when needed.
+git pull --rebase origin main
 
-# 3. Review the generated diff.
-git diff -- generated
-
-# 4. Preview, then install.
-.\scripts\install-agent.ps1 -Runtime All -WhatIf
-.\scripts\install-agent.ps1 -Runtime All
-.\scripts\verify-agent.ps1 -Scope Installed
-
-# 5. Commit.
-git add .
-git commit -m "chore: update shared agent instructions"
+# 3. Update Codex and Claude Code.
+.\scripts\update-all-agents.ps1
 ```
 
 Never edit `generated/` or the installed runtime files directly; the next build
