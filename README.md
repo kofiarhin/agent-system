@@ -65,7 +65,7 @@ Adding a runtime never requires changing shared behavior.
 | `scripts/` | Build, verify, install, restore + shared PowerShell library. |
 | `tests/` | Pester-independent test suite. |
 | `backups/` | Timestamped, hash-verified backups (contents git-ignored). |
-| `docs/` | Migration report, adapter guide, operations guide. |
+| `docs/` | Product, installation, migration, adapter, and operations documentation. |
 
 ---
 
@@ -117,23 +117,29 @@ git diff -- generated
 .\scripts\restore-backup.ps1 -Latest -Runtime All
 ```
 
-Full command reference: [docs/OPERATIONS.md](docs/OPERATIONS.md).
+For first-time setup, prerequisites, individual runtime installation, restart guidance,
+and troubleshooting, follow the [Installation Guide](docs/INSTALLATION.md). For daily
+command details, see the [Operations Guide](docs/OPERATIONS.md).
 
 ---
 
 ## Build, Verify, Install, Restore (summary)
 
 - **Build** compiles ordered modules per adapter, adds a generated-file warning,
-  runtime title, runtime header, and `<!-- source: … -->` markers, writes atomically,
-  is deterministic, and never installs.
+  runtime title, runtime header, and `<!-- source: … -->` markers, writes through a
+  temporary output, is deterministic, and never installs.
 - **Verify** checks manifest/adapters/modules, ordering, prohibited runtime paths,
   generated warnings/titles/headers/markers, unresolved variables, a clean-rebuild
   hash match, installed hashes, and behavioral anchors.
-- **Install** verifies the artifact, restricts to approved adapter paths, backs up and
-  hash-verifies the existing target, installs via a temp file with atomic replacement,
-  verifies the installed hash, and auto-rolls-back on failure. Supports `-WhatIf`.
-- **Restore** validates a backup, backs up the current target, restores atomically,
-  and verifies restored hashes.
+- **Install** verifies the artifact, restricts writes to approved adapter paths, backs
+  up and hash-verifies an existing target, replaces the target through a temporary
+  file, verifies the installed hash, and attempts rollback on failure. Supports
+  `-WhatIf`.
+- **Restore** validates a backup, backs up the current target, replaces the approved
+  target, and verifies restored hashes.
+
+For production use, install and verify one runtime at a time until multi-runtime
+transaction hardening is complete.
 
 ---
 
@@ -161,8 +167,12 @@ directories, never against real runtime paths.
 
 ## Documentation
 
-- [docs/MIGRATION_REPORT.md](docs/MIGRATION_REPORT.md) — inventory, backup, rule
-  mapping, behavioral-equivalence review.
-- [docs/RUNTIME_ADAPTER_GUIDE.md](docs/RUNTIME_ADAPTER_GUIDE.md) — adapter schema and
-  how to add a runtime.
-- [docs/OPERATIONS.md](docs/OPERATIONS.md) — executable maintenance commands.
+- [Product Requirements Document](docs/PRD.md) — product vision, users, requirements,
+  architecture, current status, limitations, and roadmap.
+- [Installation Guide](docs/INSTALLATION.md) — prerequisites, clone, build, verification,
+  runtime installation, restart, backup, restore, and troubleshooting.
+- [Operations Guide](docs/OPERATIONS.md) — executable day-to-day maintenance commands.
+- [Runtime Adapter Guide](docs/RUNTIME_ADAPTER_GUIDE.md) — adapter schema and how to add
+  a runtime.
+- [Migration Report](docs/MIGRATION_REPORT.md) — inventory, backup, rule mapping, and
+  behavioral-equivalence review.
