@@ -1,0 +1,71 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://agent-system/schemas/adapter.schema.json",
+  "title": "Universal Agent System - Runtime Adapter",
+  "description": "Contract for adapters/<runtime>.json. Adapters carry only runtime-specific mechanics, never shared behavior.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "displayName", "enabled", "output", "installation", "document", "compatibility"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "id": { "type": "string", "minLength": 1, "pattern": "^[a-z0-9][a-z0-9-]*$" },
+    "displayName": { "type": "string", "minLength": 1 },
+    "enabled": { "type": "boolean" },
+    "output": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["directory", "filename"],
+      "properties": {
+        "directory": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Repository-relative directory under generated/.",
+          "pattern": "^generated/[A-Za-z0-9._-]+$"
+        },
+        "filename": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9._-]+\\.md$"
+        }
+      }
+    },
+    "installation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["supported"],
+      "properties": {
+        "supported": { "type": "boolean" },
+        "path": { "type": "string" },
+        "approvedRoots": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "document": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["title", "runtimeHeader"],
+      "properties": {
+        "title": { "type": "string", "minLength": 1 },
+        "runtimeHeader": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "compatibility": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode", "supportsImports"],
+      "properties": {
+        "mode": { "type": "string", "enum": ["full"] },
+        "supportsImports": { "type": "boolean" }
+      }
+    },
+    "variables": {
+      "type": "object",
+      "additionalProperties": { "type": "string" }
+    }
+  }
+}

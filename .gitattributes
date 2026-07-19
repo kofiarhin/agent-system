@@ -1,0 +1,7 @@
+# Keep generated runtime files and PowerShell scripts CRLF so the deterministic
+# build's on-disk output matches a clean rebuild after any checkout.
+* text=auto
+generated/** text eol=crlf
+*.ps1 text eol=crlf
+*.md text
+*.json text

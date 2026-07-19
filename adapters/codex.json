@@ -1,0 +1,27 @@
+{
+  "$schema": "../config/schemas/adapter.schema.json",
+  "id": "codex",
+  "displayName": "Codex",
+  "enabled": true,
+  "output": {
+    "directory": "generated/codex",
+    "filename": "AGENTS.md"
+  },
+  "installation": {
+    "supported": true,
+    "path": "%USERPROFILE%\\.codex\\AGENTS.md",
+    "approvedRoots": ["%USERPROFILE%\\.codex"]
+  },
+  "document": {
+    "title": "AGENTS.md",
+    "runtimeHeader": [
+      "This is the global Codex instruction entry point.",
+      "Apply applicable repository-level AGENTS.md files.",
+      "More specific repository instructions override broader instructions."
+    ]
+  },
+  "compatibility": {
+    "mode": "full",
+    "supportsImports": false
+  }
+}

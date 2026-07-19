@@ -1,0 +1,27 @@
+{
+  "$schema": "../config/schemas/adapter.schema.json",
+  "id": "gemini",
+  "displayName": "Gemini CLI",
+  "enabled": true,
+  "output": {
+    "directory": "generated/gemini",
+    "filename": "GEMINI.md"
+  },
+  "installation": {
+    "supported": true,
+    "path": "%USERPROFILE%\\.gemini\\GEMINI.md",
+    "approvedRoots": ["%USERPROFILE%\\.gemini"]
+  },
+  "document": {
+    "title": "GEMINI.md",
+    "runtimeHeader": [
+      "This is the global Gemini CLI instruction entry point.",
+      "Apply applicable repository-level GEMINI.md files.",
+      "More specific repository instructions override broader instructions."
+    ]
+  },
+  "compatibility": {
+    "mode": "full",
+    "supportsImports": false
+  }
+}

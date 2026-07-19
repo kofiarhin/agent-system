@@ -1,0 +1,18 @@
+# Universal Agent System .gitignore
+#
+# Generated files ARE committed by policy so runtime instructions are reviewable
+# in diffs and stale output is detectable. Do NOT ignore generated/.
+
+# Backups are local safety artifacts and may contain snapshots of runtime files.
+# Keep the directory tracked but ignore its contents.
+backups/*
+!backups/.gitkeep
+
+# Transient files
+*.tmp
+*.bak
+*.log
+
+# OS cruft
+.DS_Store
+Thumbs.db

@@ -1,0 +1,27 @@
+{
+  "$schema": "../config/schemas/adapter.schema.json",
+  "id": "claude",
+  "displayName": "Claude Code",
+  "enabled": true,
+  "output": {
+    "directory": "generated/claude",
+    "filename": "CLAUDE.md"
+  },
+  "installation": {
+    "supported": true,
+    "path": "%USERPROFILE%\\.claude\\CLAUDE.md",
+    "approvedRoots": ["%USERPROFILE%\\.claude"]
+  },
+  "document": {
+    "title": "CLAUDE.md",
+    "runtimeHeader": [
+      "This is the global Claude Code instruction entry point.",
+      "Apply applicable repository-level CLAUDE.md files.",
+      "More specific repository instructions override broader instructions."
+    ]
+  },
+  "compatibility": {
+    "mode": "full",
+    "supportsImports": false
+  }
+}

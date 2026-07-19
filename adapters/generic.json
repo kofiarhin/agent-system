@@ -1,0 +1,25 @@
+{
+  "$schema": "../config/schemas/adapter.schema.json",
+  "id": "generic",
+  "displayName": "Generic Runtime",
+  "enabled": true,
+  "output": {
+    "directory": "generated/generic",
+    "filename": "SYSTEM_PROMPT.md"
+  },
+  "installation": {
+    "supported": false
+  },
+  "document": {
+    "title": "SYSTEM_PROMPT.md",
+    "runtimeHeader": [
+      "This is a runtime-neutral system prompt for custom applications, API system prompts, and unsupported runtimes.",
+      "Apply any applicable project-level instructions your runtime provides.",
+      "More specific project instructions override broader instructions."
+    ]
+  },
+  "compatibility": {
+    "mode": "full",
+    "supportsImports": false
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "$schema": "./schemas/agent.schema.json",
+  "agent": {
+    "id": "universal-engineering-agent",
+    "name": "Universal Engineering Agent",
+    "version": "1.0.0"
+  },
+  "compilation": {
+    "lineEnding": "crlf",
+    "encoding": "utf8NoBom",
+    "includeSourceMarkers": true,
+    "includeGeneratedWarning": true
+  },
+  "modules": [
+    "core/purpose-and-scope.md",
+    "core/instruction-precedence.md",
+    "core/request-classification.md",
+    "core/operating-lifecycle.md",
+    "workflows/discovery.md",
+    "workflows/approval-gate.md",
+    "workflows/implementation.md",
+    "core/repository-context.md",
+    "workflows/project-continuity.md",
+    "capabilities/software-engineering/coding-guidelines.md",
+    "capabilities/software-engineering/testing-and-verification.md",
+    "capabilities/software-engineering/frontend-taste.md",
+    "core/security-and-safety.md",
+    "core/output-requirements.md",
+    "workflows/global-learnings.md",
+    "core/failure-and-fallback.md",
+    "core/global-invariants.md"
+  ],
+  "memory": {
+    "preferences": "memory/preferences.md",
+    "learnings": "memory/learnings.md"
+  },
+  "runtimes": [
+    "codex",
+    "claude",
+    "gemini",
+    "generic"
+  ]
+}

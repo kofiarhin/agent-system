@@ -1,0 +1,54 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://agent-system/schemas/agent.schema.json",
+  "title": "Universal Agent System - Agent Manifest",
+  "description": "Contract for config/agent.json. PowerShell tooling performs the authoritative validation; this document describes the same contract.",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["agent", "compilation", "modules", "runtimes"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "agent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "version"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "pattern": "^[a-z0-9][a-z0-9-]*$" },
+        "name": { "type": "string", "minLength": 1 },
+        "version": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" }
+      }
+    },
+    "compilation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["lineEnding", "encoding", "includeSourceMarkers", "includeGeneratedWarning"],
+      "properties": {
+        "lineEnding": { "type": "string", "enum": ["crlf", "lf"] },
+        "encoding": { "type": "string", "enum": ["utf8NoBom", "utf8"] },
+        "includeSourceMarkers": { "type": "boolean" },
+        "includeGeneratedWarning": { "type": "boolean" },
+        "deterministic": { "type": "boolean" }
+      }
+    },
+    "modules": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "pattern": "^[A-Za-z0-9._-]+(/[A-Za-z0-9._-]+)*\\.md$"
+      }
+    },
+    "memory": {
+      "type": "object",
+      "additionalProperties": { "type": "string" }
+    },
+    "runtimes": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" }
+    }
+  }
+}
