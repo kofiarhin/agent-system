@@ -1,13 +1,8 @@
 # Universal Agent System
 
-A model-agnostic, runtime-independent agent instruction system. One set of shared
-instruction modules is the single source of truth; runtime-specific instruction files
-(Codex `AGENTS.md`, Claude Code `CLAUDE.md`, Gemini CLI `GEMINI.md`, a generic
-`SYSTEM_PROMPT.md`) are **generated** from those modules, not maintained by hand.
+A small, model-agnostic, runtime-independent agent instruction system. One set of shared instruction modules is the single source of truth; runtime-specific instruction files (Codex `AGENTS.md`, Claude Code `CLAUDE.md`, Gemini CLI `GEMINI.md`, and a generic `SYSTEM_PROMPT.md`) are generated from those modules rather than maintained by hand.
 
-It preserves the structure, lifecycle, safeguards, coding preferences, verification
-behavior, and output rules of the original global Codex instruction architecture while
-removing runtime-specific coupling.
+The project is intentionally MVP-focused: generate deterministic instructions, verify them, install one runtime safely, and remain easy to understand and maintain.
 
 ---
 
@@ -29,25 +24,19 @@ Generated runtime file (generated/<id>/<file>)
 Verification (scripts/verify-agent.ps1)
         │
         ▼
-Explicit installation (scripts/install-agent.ps1)  →  runtime config directory
+Explicit single-runtime installation (scripts/install-agent.ps1)
 ```
 
-Edit the shared source. Build. Verify. Review. Install. Verify again.
+Edit the shared source. Build. Verify. Review. Install one runtime. Verify again.
 
 ---
 
 ## Model vs Runtime
 
-- **Model** — the shared *behavior*: how the agent classifies requests, runs
-  discovery, gates on approval, implements, tests, reports, and stays safe. This is
-  identical across every runtime and lives in `core/`, `workflows/`, `capabilities/`,
-  and `memory/`.
-- **Runtime** — a *delivery target* (Codex, Claude Code, Gemini CLI, a custom prompt).
-  A runtime differs only in file name, install location, document title, and a short
-  header describing how it resolves its own instruction files. That lives in
-  `adapters/<id>.json`.
+- **Model** — the shared behavior: how the agent classifies requests, runs discovery, gates on approval, implements, tests, reports, and stays safe. This lives in `core/`, `workflows/`, `capabilities/`, and `memory/`.
+- **Runtime** — a delivery target such as Codex, Claude Code, Gemini CLI, or a custom prompt. Runtime differences such as filename, install location, title, and header live in `adapters/<id>.json`.
 
-Adding a runtime never requires changing shared behavior.
+Adding a runtime should not require duplicating shared behavior.
 
 ---
 
@@ -55,16 +44,16 @@ Adding a runtime never requires changing shared behavior.
 
 | Folder | Responsibility |
 |---|---|
-| `core/` | Purpose, precedence, request classification, lifecycle, repository context, security, output, failure/fallback, invariants. |
-| `workflows/` | Discovery, approval gate, implementation, project continuity, global learnings. |
-| `capabilities/software-engineering/` | Coding guidelines, testing & verification, frontend taste. |
-| `memory/` | Durable preferences and the reusable learnings bank (kept alongside source, not compiled into the runtime document). |
-| `adapters/` | Runtime mechanics only (id, output, install path, title, header). |
-| `config/` | `agent.json` manifest + JSON Schemas. |
-| `generated/` | Build artifacts (committed, never hand-edited). |
-| `scripts/` | Build, verify, install, restore + shared PowerShell library. |
+| `core/` | Purpose, precedence, request classification, lifecycle, repository context, security, output, failure/fallback, and invariants. |
+| `workflows/` | Discovery, approval gate, implementation, project continuity, and global learnings. |
+| `capabilities/software-engineering/` | Coding guidelines, testing and verification, and frontend taste. |
+| `memory/` | Durable preferences and the reusable learnings bank. |
+| `adapters/` | Runtime mechanics only: id, output, install path, title, and header. |
+| `config/` | `agent.json` manifest and JSON Schemas. |
+| `generated/` | Build artifacts; committed, but never hand-edited. |
+| `scripts/` | Build, verify, install, restore, and shared PowerShell helpers. |
 | `tests/` | Pester-independent test suite. |
-| `backups/` | Timestamped, hash-verified backups (contents git-ignored). |
+| `backups/` | Timestamped backups; contents are git-ignored. |
 | `docs/` | Product, installation, migration, adapter, and operations documentation. |
 
 ---
@@ -86,8 +75,7 @@ generated/                              (overwritten by the next build)
 %USERPROFILE%\.gemini\GEMINI.md
 ```
 
-Each shared module has one top-level heading, contains no runtime-specific home paths,
-and reads cleanly when concatenated into the compiled document.
+Each shared module should have one top-level heading, contain no runtime-specific home paths, and read cleanly when compiled.
 
 ---
 
@@ -96,59 +84,53 @@ and reads cleanly when concatenated into the compiled document.
 ```powershell
 cd "$env:USERPROFILE\agent-system"
 
-# Build all runtimes.
+# Build all generated artifacts.
 .\scripts\build-agent.ps1 -Runtime All
 
 # Verify source and generated output.
 .\scripts\verify-agent.ps1
 
-# Review the generated runtime files.
+# Review generated changes.
 git diff -- generated
 
-# Preview installation (no changes).
-.\scripts\install-agent.ps1 -Runtime All -WhatIf
+# Preview one runtime installation.
+.\scripts\install-agent.ps1 -Runtime codex -WhatIf
 
-# Install after review, then confirm.
-.\scripts\install-agent.ps1 -Runtime All
-.\scripts\verify-agent.ps1 -Scope Installed
+# Install and verify that runtime.
+.\scripts\install-agent.ps1 -Runtime codex
+.\scripts\verify-agent.ps1 -Scope Installed -Runtime codex
 
-# Restore if needed.
+# Repeat separately for another runtime when needed.
+.\scripts\install-agent.ps1 -Runtime claude -WhatIf
+.\scripts\install-agent.ps1 -Runtime claude
+.\scripts\verify-agent.ps1 -Scope Installed -Runtime claude
+
+# List backups before restoring.
 .\scripts\restore-backup.ps1 -List
-.\scripts\restore-backup.ps1 -Latest -Runtime All
 ```
 
-For first-time setup, prerequisites, individual runtime installation, restart guidance,
-and troubleshooting, follow the [Installation Guide](docs/INSTALLATION.md). For daily
-command details, see the [Operations Guide](docs/OPERATIONS.md).
+`-Runtime All` is appropriate for build and verification. Installation should be performed one runtime at a time. Where installation accepts `-Runtime All`, it runs sequentially and does not provide an all-or-nothing transaction.
+
+For first-time setup, prerequisites, restart guidance, backup and restore instructions, and troubleshooting, follow the [Installation Guide](docs/INSTALLATION.md). For daily command details, see the [Operations Guide](docs/OPERATIONS.md).
 
 ---
 
-## Build, Verify, Install, Restore (summary)
+## Build, Verify, Install, Restore
 
-- **Build** compiles ordered modules per adapter, adds a generated-file warning,
-  runtime title, runtime header, and `<!-- source: … -->` markers, writes through a
-  temporary output, is deterministic, and never installs.
-- **Verify** checks manifest/adapters/modules, ordering, prohibited runtime paths,
-  generated warnings/titles/headers/markers, unresolved variables, a clean-rebuild
-  hash match, installed hashes, and behavioral anchors.
-- **Install** verifies the artifact, restricts writes to approved adapter paths, backs
-  up and hash-verifies an existing target, replaces the target through a temporary
-  file, verifies the installed hash, and attempts rollback on failure. Supports
-  `-WhatIf`.
-- **Restore** validates a backup, backs up the current target, replaces the approved
-  target, and verifies restored hashes.
+- **Build** compiles ordered modules per adapter, adds generated-file warnings and source markers, writes only under `generated/`, and must be deterministic.
+- **Verify** checks source configuration, adapters, modules, generated freshness, installed hashes, and behavioral anchors.
+- **Install** verifies the selected artifact, restricts writes to approved adapter paths, backs up an existing target, replaces the target through a temporary file, verifies the installed hash, and supports `-WhatIf`.
+- **Restore** validates a selected backup and restores it to an approved runtime target.
 
-For production use, install and verify one runtime at a time until multi-runtime
-transaction hardening is complete.
+The approved MVP hardening direction strengthens backup-manifest durability, restore rollback, restore target identity, filesystem-aware path validation, Windows CI, and targeted failure-path testing. It intentionally does not add a transaction engine, recovery journal, operational dashboard, or enterprise deployment layer.
+
+Until that hardening is implemented and verified, install and verify one runtime at a time and treat replacement as verified temporary-file replacement rather than a proven atomic operation.
 
 ---
 
 ## Why Generated Files Must Not Be Edited Manually
 
-Generated files are disposable build artifacts. Any manual edit is lost on the next
-build and creates drift between the source of truth and the deployed instructions.
-`build-agent.ps1 -Check` and `verify-agent.ps1` detect stale generated files so drift
-is caught before installation. Always change behavior in the shared modules and rebuild.
+Generated files are disposable build artifacts. Manual edits are lost on the next build and create drift between source and deployed instructions. `build-agent.ps1 -Check` and `verify-agent.ps1` detect stale generated files. Always change behavior in the shared modules and rebuild.
 
 ---
 
@@ -158,21 +140,28 @@ is caught before installation. Always change behavior in the shared modules and 
 .\tests\run-tests.ps1
 ```
 
-The suite is self-contained (no external dependency) and exercises deterministic
-builds, ordering, validation failures, path-traversal rejection, stale detection,
-installer backups/rollback/`-WhatIf`, and restore behavior — all in temporary
-directories, never against real runtime paths.
+The test suite is self-contained and uses temporary directories rather than real runtime paths. The MVP hardening backlog adds Windows CI and focused failure tests for backup persistence, replacement failures, restore validation, and rollback.
+
+---
+
+## MVP Boundaries
+
+The MVP is designed for safe, maintainable personal use. The following are deferred unless a demonstrated need justifies them:
+
+- transactional multi-runtime installation;
+- transaction journals and interrupted-operation recovery;
+- structured JSON operation logs;
+- `doctor`, `status`, and recovery dashboards;
+- backup retention infrastructure;
+- release signing and formal certification;
+- enterprise deployment and hosted synchronization.
 
 ---
 
 ## Documentation
 
-- [Product Requirements Document](docs/PRD.md) — product vision, users, requirements,
-  architecture, current status, limitations, and roadmap.
-- [Installation Guide](docs/INSTALLATION.md) — prerequisites, clone, build, verification,
-  runtime installation, restart, backup, restore, and troubleshooting.
+- [Product Requirements Document](docs/PRD.md) — MVP vision, requirements, safety direction, limitations, and deferred ideas.
+- [Installation Guide](docs/INSTALLATION.md) — prerequisites, build, verification, single-runtime installation, restart, backup, restore, and troubleshooting.
 - [Operations Guide](docs/OPERATIONS.md) — executable day-to-day maintenance commands.
-- [Runtime Adapter Guide](docs/RUNTIME_ADAPTER_GUIDE.md) — adapter schema and how to add
-  a runtime.
-- [Migration Report](docs/MIGRATION_REPORT.md) — inventory, backup, rule mapping, and
-  behavioral-equivalence review.
+- [Runtime Adapter Guide](docs/RUNTIME_ADAPTER_GUIDE.md) — adapter schema and how to add a runtime.
+- [Migration Report](docs/MIGRATION_REPORT.md) — inventory, backup, rule mapping, and behavioral-equivalence review.
