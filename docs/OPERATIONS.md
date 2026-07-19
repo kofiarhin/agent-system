@@ -9,6 +9,26 @@ cd "$env:USERPROFILE\agent-system"
 
 ---
 
+## One-command Codex update
+
+Use this after changing shared instructions, configuration, adapters, or generated Codex behavior:
+
+```powershell
+.\scripts\update-codex-agent.ps1
+```
+
+The wrapper runs the supported Codex workflow in order:
+
+1. build the Codex artifact;
+2. verify generated output;
+3. preview installation with `-WhatIf`;
+4. install the Codex artifact;
+5. verify the installed copy.
+
+It stops immediately on failure and returns a non-zero exit code. Restart Codex after a successful update so new sessions load the installed instructions.
+
+---
+
 ## Build
 
 ```powershell
