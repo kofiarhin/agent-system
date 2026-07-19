@@ -84,41 +84,20 @@ Each shared module should have one top-level heading, contain no runtime-specifi
 ```powershell
 cd "$env:USERPROFILE\agent-system"
 
-# Build all generated artifacts.
-.\scripts\build-agent.ps1 -Runtime All
-
-# Verify source and generated output.
-.\scripts\verify-agent.ps1
-
-# Review generated changes.
-git diff -- generated
-
-# Preview one runtime installation.
-.\scripts\install-agent.ps1 -Runtime codex -WhatIf
-
-# Install and verify that runtime.
-.\scripts\install-agent.ps1 -Runtime codex
-.\scripts\verify-agent.ps1 -Scope Installed -Runtime codex
-
-# Repeat separately for another runtime when needed.
-.\scripts\install-agent.ps1 -Runtime claude -WhatIf
-.\scripts\install-agent.ps1 -Runtime claude
-.\scripts\verify-agent.ps1 -Scope Installed -Runtime claude
-
-# List backups before restoring.
-.\scripts\restore-backup.ps1 -List
+# Update Codex and Claude Code in one command.
+.\scripts\update-all-agents.ps1
 ```
 
-For the complete build, verification, preview, installation, and installed-verification sequence, use the runtime-specific one-command wrapper:
+The combined wrapper updates Codex first and Claude Code second. It stops on the first failure, verifies each installed artifact, and reminds you to restart both runtimes after success.
+
+Use the individual wrappers when you only want to update one runtime:
 
 ```powershell
 .\scripts\update-codex-agent.ps1
 .\scripts\update-claude-agent.ps1
 ```
 
-Each wrapper stops on the first failed step and reminds you to restart its runtime after a successful update.
-
-`-Runtime All` is appropriate for build and verification. Installation should be performed one runtime at a time. Where installation accepts `-Runtime All`, it runs sequentially and does not provide an all-or-nothing transaction.
+The combined update is sequential, not transactional. Codex may complete successfully before a later Claude Code failure.
 
 For first-time setup, prerequisites, restart guidance, backup and restore instructions, and troubleshooting, follow the [Installation Guide](docs/INSTALLATION.md). For daily command details, see the [Operations Guide](docs/OPERATIONS.md).
 
