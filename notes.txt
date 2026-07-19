@@ -1,0 +1,3 @@
+//powershell command to build
+-switch to powershell / does not work with bash
+.\scripts\update-all-agents.ps1
