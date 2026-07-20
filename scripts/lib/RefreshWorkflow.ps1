@@ -15,7 +15,7 @@ function Invoke-AgentChildScript {
     $code = $LASTEXITCODE
     if ($null -eq $code) { $code = 0 }
     if ($code -ne 0) {
-        throw "Child script failed with exit code $code: $ScriptPath"
+        throw "Child script failed with exit code ${code}: $ScriptPath"
     }
 }
 
@@ -23,7 +23,7 @@ function Invoke-AgentSystemRefresh {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory)][string]$RepoRoot,
-        [Parameter(Mandatory)][array]$RuntimeRecords,
+        [Parameter(Mandatory)][AllowEmptyCollection()][array]$RuntimeRecords,
         [ValidateSet('Setup','Sync')][string]$Mode = 'Setup',
         [switch]$Force,
         [switch]$WhatIf,

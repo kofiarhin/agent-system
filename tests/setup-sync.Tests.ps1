@@ -103,9 +103,41 @@ function Invoke-SetupSyncTests {
         Assert-True (-not (Test-Path -LiteralPath (Join-Path $sandbox 'generated/gemini/GEMINI.md')))
     }
 
-    Test-Case 'No detected runtimes returns exit code 2' {
+    Test-Case 'No detected runtimes returns exit code 2 with an empty structured result' {
         $result = Invoke-AgentSystemRefresh -RepoRoot $global:AgentTestState.RepoRoot -RuntimeRecords @() -Mode Setup
         Assert-True (-not $result.Succeeded)
         Assert-Equal 2 $result.ExitCode
+        Assert-Equal 0 @($result.Results).Count
+        Assert-Equal 0 @($result.RestartRuntimes).Count
+    }
+
+    Test-Case 'Child-script failure surfaces a formatted message without a parser error' {
+        $failing = Join-Path (New-TempDir) 'fail.ps1'
+        Set-Content -LiteralPath $failing -Value 'exit 7' -Encoding UTF8
+        $threw = $false
+        $message = $null
+        try {
+            Invoke-AgentChildScript -ScriptPath $failing
+        }
+        catch {
+            $threw = $true
+            $message = $_.Exception.Message
+        }
+        Assert-True $threw 'Expected Invoke-AgentChildScript to throw on a non-zero exit code'
+        Assert-Contains $message 'exit code 7'
+        Assert-Contains $message $failing
+    }
+
+    Test-Case 'Test harness state factory returns fresh, independent counters' {
+        $first = New-AgentTestState
+        $first.Pass = 5
+        $first.Fail = 3
+        $first.Failures += 'stale failure'
+        $first.TempRoots += 'stale-root'
+        $second = New-AgentTestState
+        Assert-Equal 0 $second.Pass
+        Assert-Equal 0 $second.Fail
+        Assert-Equal 0 @($second.Failures).Count
+        Assert-Equal 0 @($second.TempRoots).Count
     }
 }

@@ -4,12 +4,20 @@
 
 Set-StrictMode -Version Latest
 
+function New-AgentTestState {
+    # Factory for a fresh, zeroed harness state so every run starts clean.
+    return [pscustomobject]@{ Pass = 0; Fail = 0; Failures = @(); RepoRoot = $null; TempRoots = @() }
+}
+
 if (-not (Get-Variable -Name AgentTestState -Scope Global -ErrorAction SilentlyContinue)) {
-    $global:AgentTestState = [pscustomobject]@{ Pass = 0; Fail = 0; Failures = @(); RepoRoot = $null; TempRoots = @() }
+    $global:AgentTestState = New-AgentTestState
 }
 
 function Initialize-TestHarness {
+    # Always reset counters, failures, and temp-root tracking so repeated runs in
+    # the same PowerShell session never accumulate state from a previous run.
     param([Parameter(Mandatory)][string]$RepoRoot)
+    $global:AgentTestState = New-AgentTestState
     $global:AgentTestState.RepoRoot = $RepoRoot
 }
 
