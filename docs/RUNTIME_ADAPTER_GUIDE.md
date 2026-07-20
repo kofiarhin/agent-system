@@ -1,15 +1,12 @@
 # Runtime Adapter Guide
 
-Adapters make one set of shared instruction modules deployable to multiple AI coding
-runtimes. A runtime is a delivery target (Codex, Claude Code, Gemini CLI, a custom
-API prompt). The *behavior* is shared; the adapter only describes runtime *mechanics*.
+Adapters make shared instruction modules deployable to multiple AI coding runtimes. Shared behavior lives in source modules; adapters describe runtime delivery mechanics only.
 
----
+Adapters are also the source of truth for automatic runtime detection used by `setup-agent-system.ps1` and `sync-agent-system.ps1`.
 
 ## Adapter Schema
 
-Each adapter is `adapters/<id>.json` and conforms to
-`config/schemas/adapter.schema.json`.
+Each adapter is stored at `adapters/<id>.json` and conforms to `config/schemas/adapter.schema.json`.
 
 ```json
 {
@@ -41,86 +38,98 @@ Each adapter is `adapters/<id>.json` and conforms to
 }
 ```
 
-### Field reference
+## Field Reference
 
 | Field | Purpose |
 |---|---|
-| `id` | Lowercase runtime id; must match the filename and the `runtimes` list in `config/agent.json`. |
-| `displayName` | Human-readable name shown in tooling output. |
-| `enabled` | When false, `-Runtime All` skips this runtime. |
-| `output.directory` | Repository-relative directory under `generated/`. Must not escape `generated/`. |
-| `output.filename` | Generated file name (e.g. `AGENTS.md`, `CLAUDE.md`, `SYSTEM_PROMPT.md`). |
-| `installation.supported` | Whether `install-agent.ps1` can deploy this runtime. |
-| `installation.path` | Absolute install target; `%VAR%` environment variables are expanded. |
-| `installation.approvedRoots` | Allowlist of roots the install/restore target must fall inside. |
+| `id` | Lowercase runtime id matching the adapter filename and manifest entry. |
+| `displayName` | Human-readable name used in detection and refresh output. |
+| `enabled` | Whether the runtime participates in enabled-runtime operations. |
+| `output.directory` | Repository-relative output directory under `generated/`. |
+| `output.filename` | Runtime-native generated filename. |
+| `installation.supported` | Whether installation tooling can deploy the runtime. |
+| `installation.path` | Installed target with `%VAR%` environment expansion. |
+| `installation.approvedRoots` | Narrow allowlist containing install and restore targets. |
 | `document.title` | First heading of the generated document. |
-| `document.runtimeHeader` | Lines describing how the runtime resolves its own instruction files. This is the **only** place runtime-specific resolution notes belong. |
-| `compatibility.mode` | `full` — the entire shared behavior is compiled inline. |
-| `compatibility.supportsImports` | Reserved; v1 uses full compilation for portability. |
+| `document.runtimeHeader` | Runtime-specific instruction-resolution notes. |
+| `compatibility.mode` | `full` means shared behavior is compiled inline. |
+| `compatibility.supportsImports` | Reserved; current adapters use full compilation. |
 
----
+## Automatic Detection Contract
 
-## Allowed vs Prohibited Responsibilities
+The streamlined setup and sync workflows automatically support Codex, Claude Code, and Gemini CLI.
 
-**Allowed in adapters (runtime mechanics only):**
+A runtime is detected when:
 
-- runtime id and display name
-- generated output directory and filename
-- install target path and approved roots
-- document title
-- runtime header / instruction-resolution notes
-- compilation compatibility settings
+1. its adapter is in the supported setup/sync allowlist;
+2. the adapter is enabled;
+3. installation is supported;
+4. `installation.path` resolves successfully;
+5. the resolved target is within an approved root;
+6. the target file's parent directory already exists.
 
-**Prohibited in adapters (belongs in shared modules):**
+The installed instruction file itself may be absent. This allows first-time Agent System installation into an already initialized runtime directory.
 
-- coding guidelines, stack preferences, testing rules
-- discovery, approval, implementation, or continuity workflow
-- security, output, failure, or invariant policy
-- any behavior that should be identical across runtimes
+Detection is read-only. It must not create runtime directories or instruction files.
 
-Shared behavior lives in `core/`, `workflows/`, `capabilities/`, and `memory/`.
-Adapters must never redefine it.
+The detection directory is derived from the parent of `installation.path`; setup and sync must not maintain a second hard-coded path map.
 
----
+| Adapter | Detection directory | Installed file |
+|---|---|---|
+| `codex` | `%USERPROFILE%\.codex` | `AGENTS.md` |
+| `claude` | `%USERPROFILE%\.claude` | `CLAUDE.md` |
+| `gemini` | `%USERPROFILE%\.gemini` | `GEMINI.md` |
 
-## How To Add a Runtime
+The `generic` adapter is generated-only and excluded from automatic setup/sync because it has no supported production install target.
 
-1. Create `adapters/<id>.json` following the schema above. Choose a unique
-   `output.directory` under `generated/`.
-2. Add `"<id>"` to the `runtimes` array in `config/agent.json`.
-3. (Optional) Add runtime-specific tests under `tests/`.
-4. Build: `./scripts/build-agent.ps1 -Runtime <id>`.
-5. Verify: `./scripts/verify-agent.ps1 -Scope Generated -Runtime <id>`.
-6. Review the generated file under `generated/<id>/`.
-7. Preview installation: `./scripts/install-agent.ps1 -Runtime <id> -WhatIf`.
-8. Install explicitly: `./scripts/install-agent.ps1 -Runtime <id>`.
+## Adapter Responsibilities
 
-No shared module should need editing solely to add a runtime.
+Allowed:
 
-### Choosing install paths
+- runtime id and display name;
+- generated output directory and filename;
+- install target and approved roots;
+- document title and runtime header;
+- compilation compatibility settings.
 
-- Use an absolute path with environment variables (`%USERPROFILE%\...`).
-- Set `approvedRoots` to the narrowest directory that contains the target. The
-  installer and restore tooling refuse to write outside these roots.
-- For runtimes without a stable on-disk location (e.g. an API system prompt), set
-  `installation.supported` to `false` and omit `path`. The `generic` adapter is the
-  reference example.
+Prohibited:
 
----
+- coding, testing, discovery, approval, implementation, security, or reporting policy;
+- behavior that should remain identical across runtimes;
+- executable package-install or runtime-launch commands;
+- duplicated setup/sync orchestration logic.
+
+Shared behavior belongs in `core/`, `workflows/`, `capabilities/`, and `memory/`.
+
+## Adding a Runtime
+
+1. Create `adapters/<id>.json`.
+2. Add the id to `config/agent.json`.
+3. Build and verify:
+
+   ```powershell
+   .\scripts\build-agent.ps1 -Runtime <id>
+   .\scripts\verify-agent.ps1 -Scope Generated -Runtime <id> -Strict
+   ```
+
+4. Review `generated/<id>/`.
+5. When installation is supported, preview and install with the low-level installer.
+6. Add isolated generation, validation, installation, and detection tests as applicable.
+
+Adding an adapter does not automatically add it to the product-supported setup/sync allowlist. Expanding that allowlist requires separate discovery, approval, documentation, and tests.
+
+## Choosing Installation Paths
+
+- Use an absolute path with environment variables such as `%USERPROFILE%`.
+- Set `approvedRoots` to the narrowest directory containing the target.
+- Use the runtime's documented global instruction filename.
+- For generated-only adapters, set `installation.supported` to false and omit the path.
 
 ## Validation Requirements
 
-`verify-agent.ps1` and `build-agent.ps1` enforce:
+The tooling enforces required fields, id consistency, output containment under `generated/`, approved-root containment, reparse-point rejection, generated freshness, installed hash verification, read-only detection, and temporary-target isolation in tests.
 
-- required fields present; `id` matches filename
-- `compatibility.mode` is `full`
-- output path is unique and inside `generated/`
-- no duplicate runtime ids
-- (for install/restore) target inside an approved root; no reparse points
-
----
-
-## Example: minimal generic adapter
+## Generic Adapter Example
 
 ```json
 {
@@ -128,14 +137,22 @@ No shared module should need editing solely to add a runtime.
   "id": "generic",
   "displayName": "Generic Runtime",
   "enabled": true,
-  "output": { "directory": "generated/generic", "filename": "SYSTEM_PROMPT.md" },
-  "installation": { "supported": false },
+  "output": {
+    "directory": "generated/generic",
+    "filename": "SYSTEM_PROMPT.md"
+  },
+  "installation": {
+    "supported": false
+  },
   "document": {
     "title": "SYSTEM_PROMPT.md",
     "runtimeHeader": [
       "This is a runtime-neutral system prompt for custom applications, API system prompts, and unsupported runtimes."
     ]
   },
-  "compatibility": { "mode": "full", "supportsImports": false }
+  "compatibility": {
+    "mode": "full",
+    "supportsImports": false
+  }
 }
 ```
