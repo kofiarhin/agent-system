@@ -69,6 +69,14 @@ try {
     Write-Section 'Agent System synchronization'
     Write-Info "Repository: $repoRoot"
 
+    if (-not $WhatIfPreference) {
+        $action = if ($SkipPull) { 'Refresh detected runtimes from the current checkout' } else { 'Pull origin/main and refresh detected runtimes' }
+        if (-not $PSCmdlet.ShouldProcess($repoRoot, $action)) {
+            Write-Info 'Synchronization cancelled.'
+            exit 0
+        }
+    }
+
     if (-not $SkipPull) {
         Write-Section 'Pull latest Agent System changes'
         if ($WhatIfPreference) {
@@ -83,7 +91,6 @@ try {
         Write-Info 'Git pull skipped; using the current local checkout.'
     }
 
-    # Reload configuration after a successful pull.
     $cfg = Import-AgentConfig -RepoRoot $repoRoot
     $manifestResults = Test-AgentConfig -AgentConfig $cfg -RepoRoot $repoRoot
     if ($manifestResults | Where-Object { $_.Result -eq 'Fail' }) {
