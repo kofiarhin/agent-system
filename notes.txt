@@ -1,3 +1,2 @@
-//powershell command to build
--switch to powershell / does not work with bash
-.\scripts\update-all-agents.ps1
+//run this command in powershell(wont work with bash) for installation and refresh
+1.\tests\run-tests.ps1
