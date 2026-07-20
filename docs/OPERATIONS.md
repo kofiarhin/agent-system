@@ -1,179 +1,131 @@
 # Operations Guide
 
-Executable PowerShell for day-to-day maintenance. Run from the repository root.
-All commands are PowerShell 7 compatible and also run under Windows PowerShell 5.1.
+Run commands from the repository root. Windows PowerShell 5.1 and PowerShell 7 are supported.
 
 ```powershell
 cd "$env:USERPROFILE\agent-system"
 ```
 
----
-
-## One-command update for Codex and Claude Code
-
-Use this after changing shared instructions, configuration, adapters, or generated runtime behavior:
+## First-Time Setup
 
 ```powershell
-.\scripts\update-all-agents.ps1
+.\scripts\setup-agent-system.ps1
 ```
 
-The combined wrapper runs the existing runtime-specific workflows sequentially:
+Setup validates configuration, detects existing Codex, Claude Code, and Gemini CLI directories from adapter metadata, then sequentially builds, verifies, previews, installs, and verifies only detected runtimes.
 
-1. update and verify Codex;
-2. stop immediately if Codex fails;
-3. update and verify Claude Code;
-4. stop immediately if Claude Code fails;
-5. report final success and restart guidance.
+```powershell
+.\scripts\setup-agent-system.ps1 -WhatIf
+.\scripts\setup-agent-system.ps1 -Force
+```
 
-The operation is sequential, not transactional. Codex may complete successfully before a later Claude Code failure.
+No runtime folders are created. If none are detected, setup exits with code `2`.
 
-Use an individual wrapper when only one runtime needs updating:
+## Ongoing Synchronization
+
+```powershell
+.\scripts\sync-agent-system.ps1
+```
+
+Default sync validates a clean `main` working tree, runs:
+
+```powershell
+git pull --rebase origin main
+```
+
+then reloads configuration and refreshes detected runtimes.
+
+```powershell
+# Use the current local checkout.
+.\scripts\sync-agent-system.ps1 -SkipPull
+
+# Preview without pulling, building, or installing.
+.\scripts\sync-agent-system.ps1 -WhatIf
+
+# Reinstall matching runtime files.
+.\scripts\sync-agent-system.ps1 -Force
+```
+
+Default sync refuses to pull when Git is unavailable, the current branch is not `main`, the working tree contains tracked or untracked changes, or pull/rebase fails. It never stashes, resets, cleans, commits, switches branches, or resolves conflicts automatically.
+
+## Runtime Detection
+
+| Runtime | Directory | Installed file |
+|---|---|---|
+| Codex | `%USERPROFILE%\.codex` | `AGENTS.md` |
+| Claude Code | `%USERPROFILE%\.claude` | `CLAUDE.md` |
+| Gemini CLI | `%USERPROFILE%\.gemini` | `GEMINI.md` |
+
+The directories are derived from adapter installation paths rather than duplicated in the orchestration scripts. A directory is sufficient for detection; the instruction file may not yet exist.
+
+Processing order is Codex, Claude Code, then Gemini CLI.
+
+## Refresh Pipeline
+
+```text
+Build → verify generated → preview install → install → verify installed
+```
+
+The workflow is sequential and fail-fast, not transactional. Earlier successful updates remain installed if a later runtime fails. Restart guidance lists only runtimes whose installed file changed.
+
+## Exit Codes
+
+| Code | Meaning |
+|---|---|
+| `0` | Success, including already-current files |
+| `1` | Validation, build, verification, installation, or unexpected failure |
+| `2` | No supported runtime detected |
+| `3` | Git precondition or pull failure |
+
+## Advanced Commands
+
+```powershell
+.\scripts\build-agent.ps1 -Runtime All
+.\scripts\build-agent.ps1 -Runtime All -Check
+.\scripts\verify-agent.ps1 -Scope All -Strict
+.\scripts\install-agent.ps1 -Runtime codex -WhatIf
+.\scripts\install-agent.ps1 -Runtime codex
+.\scripts\verify-agent.ps1 -Scope Installed -Runtime codex
+.\scripts\restore-backup.ps1 -List
+.\tests\run-tests.ps1
+```
+
+Compatibility wrappers remain supported:
 
 ```powershell
 .\scripts\update-codex-agent.ps1
 .\scripts\update-claude-agent.ps1
-```
-
-Each runtime wrapper performs:
-
-1. build the runtime artifact;
-2. verify generated output;
-3. preview installation with `-WhatIf`;
-4. install the runtime artifact;
-5. verify the installed copy.
-
-All wrappers stop immediately on failure and return a non-zero exit code. Restart the updated runtime after success so new sessions load the installed instructions.
-
----
-
-## Build
-
-```powershell
-# Build every enabled runtime.
-.\scripts\build-agent.ps1 -Runtime All
-
-# Build a single runtime.
-.\scripts\build-agent.ps1 -Runtime codex
-
-# Verbose compilation detail.
-.\scripts\build-agent.ps1 -Runtime All -Verbose
-
-# Remove generated files known to the configuration (no build).
-.\scripts\build-agent.ps1 -Runtime All -Clean
-
-# Fail (exit 2) if any checked-in generated file is stale. Does not write.
-.\scripts\build-agent.ps1 -Runtime All -Check
-```
-
-The build never installs. It writes only under `generated/`, atomically, and skips
-files whose content is unchanged.
-
----
-
-## Verify
-
-```powershell
-# Verify source + generated (default).
-.\scripts\verify-agent.ps1
-
-# Individual scopes.
-.\scripts\verify-agent.ps1 -Scope Source
-.\scripts\verify-agent.ps1 -Scope Generated
-.\scripts\verify-agent.ps1 -Scope Installed
-
-# Restrict to one runtime; treat warnings as failures.
-.\scripts\verify-agent.ps1 -Scope Generated -Runtime codex -Strict
-```
-
-Verification checks manifest/adapter validity, module existence and ordering,
-prohibited runtime paths, generated warnings, titles, headers, source markers,
-unresolved variables, deterministic clean rebuild, freshness, installed hashes, and
-behavioral anchors. Non-zero exit on any failure.
-
----
-
-## Preview installation (no changes)
-
-```powershell
-.\scripts\install-agent.ps1 -Runtime All -WhatIf
-```
-
-`-WhatIf` prints the plan (source artifact, target path, whether a backup would be
-created, whether the target exists) and writes nothing.
-
----
-
-## Install (after review)
-
-```powershell
-# Install all enabled, installable runtimes.
-.\scripts\install-agent.ps1 -Runtime All
-
-# Install one runtime; reinstall even if already current.
-.\scripts\install-agent.ps1 -Runtime codex -Force
-```
-
-The installer verifies the generated artifact, confirms the target is an approved
-adapter path, backs up any existing target (hash-verified), installs through a
-temporary file, replaces atomically, verifies the installed hash, and rolls back from
-the verified backup on a failed replacement.
-
-```powershell
-# Confirm installed files match generated artifacts.
-.\scripts\verify-agent.ps1 -Scope Installed
-```
-
----
-
-## Restore
-
-```powershell
-# List available backups.
-.\scripts\restore-backup.ps1 -List
-
-# Restore the latest backup for one runtime (preview first).
-.\scripts\restore-backup.ps1 -Latest -Runtime codex -WhatIf
-.\scripts\restore-backup.ps1 -Latest -Runtime codex
-
-# Restore a specific backup for all runtimes it contains.
-.\scripts\restore-backup.ps1 -BackupId 20260719-031433Z -Runtime All
-```
-
-Restore validates the backup manifest and hashes, backs up the current target before
-restoring, restores atomically, verifies restored hashes, and rejects targets outside
-approved runtime roots.
-
----
-
-## Tests
-
-```powershell
-# Full suite (Pester-independent; temp directories only).
-.\tests\run-tests.ps1
-
-# A single suite standalone.
-.\tests\build-agent.Tests.ps1
-.\tests\verify-agent.Tests.ps1
-.\tests\install-agent.Tests.ps1
-.\tests\restore-backup.Tests.ps1
-```
-
-Tests never install to real `.codex` / `.claude` / `.gemini` paths.
-
----
-
-## Standard update workflow
-
-```powershell
-cd "$env:USERPROFILE\agent-system"
-
-# 1. Edit shared source only (core/ workflows/ capabilities/ memory/ config/ adapters/).
-# 2. Pull current repository changes when needed.
-git pull --rebase origin main
-
-# 3. Update Codex and Claude Code.
 .\scripts\update-all-agents.ps1
 ```
 
-Never edit `generated/` or the installed runtime files directly; the next build
-overwrites `generated/`, and installed files are copies of build artifacts.
+## Troubleshooting
+
+### Dirty working tree
+
+```powershell
+git status --short
+```
+
+Commit, stash, or remove changes yourself, then retry.
+
+### Wrong branch
+
+```powershell
+git branch --show-current
+git switch main
+```
+
+### No runtime detected
+
+Install and launch Codex, Claude Code, or Gemini CLI so its user-level directory exists, then rerun setup or sync.
+
+### Build or verification failure
+
+```powershell
+.\scripts\build-agent.ps1 -Runtime All
+.\scripts\verify-agent.ps1 -Scope All -Strict
+```
+
+### Runtime still uses old behavior
+
+Close active sessions and start a new runtime session after an installed instruction file changes.
