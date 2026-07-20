@@ -25,7 +25,7 @@ function Invoke-SetupSyncTests {
         Assert-Equal 'codex' $results[0].RuntimeId
         Assert-Equal 'claude' $results[1].RuntimeId
         Assert-Equal 'gemini' $results[2].RuntimeId
-        Assert-True ([bool]($results | Where-Object { -not $_.Detected }).Count -eq 0)
+        Assert-Equal 0 @($results | Where-Object { -not $_.Detected }).Count
     }
 
     Test-Case 'Existing runtime directory is detected when instruction file is absent' {
@@ -66,10 +66,7 @@ function Invoke-SetupSyncTests {
         $codexDir = New-TempDir
         $claudeRoot = New-TempDir
         $claudeDir = Join-Path $claudeRoot 'missing'
-        $map = @{
-            codex = (Join-Path $codexDir 'AGENTS.md')
-            claude = (Join-Path $claudeDir 'CLAUDE.md')
-        }
+        $map = @{ codex=(Join-Path $codexDir 'AGENTS.md'); claude=(Join-Path $claudeDir 'CLAUDE.md') }
         $detection = @(Get-DetectedAgentRuntimes -RepoRoot $sandbox -RuntimeIds @('codex','claude') -InstallPathMap $map)
         $result = Invoke-AgentSystemRefresh -RepoRoot $sandbox -RuntimeRecords $detection -Mode Setup -TargetMap $map
         Assert-True $result.Succeeded
