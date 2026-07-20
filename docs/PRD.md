@@ -1,396 +1,394 @@
 # Universal Agent System — Product Requirements Document
 
-**Status:** Implemented v1.0.0; MVP hardening proposed  
+**Status:** Implemented streamlined setup and synchronization workflow  
 **Primary platform:** Windows with PowerShell 5.1 or later  
 **Repository:** `kofiarhin/agent-system`
 
 ## 1. Executive Summary
 
-Universal Agent System is a small, model-agnostic instruction system for AI coding runtimes. It keeps reusable agent behavior in one shared source and generates runtime-native instruction files for Codex, Claude Code, Gemini CLI, and generic/custom agents.
+Universal Agent System is a small, model-agnostic instruction system for AI coding runtimes. It keeps reusable behavior in one shared source and generates runtime-native instruction files for Codex, Claude Code, Gemini CLI, and generic/custom use.
 
-The MVP is intentionally narrow:
+The primary product experience is:
 
-```text
-Shared instruction modules
-        ↓
-Configuration + runtime adapter
-        ↓
-Deterministic build
-        ↓
-Generated runtime artifact
-        ↓
-Verification
-        ↓
-Explicit single-runtime installation
+```powershell
+# First-time installation from an already cloned repository.
+.\scripts\setup-agent-system.ps1
+
+# Ongoing repository and runtime synchronization.
+.\scripts\sync-agent-system.ps1
 ```
 
-The product should generate instructions, install them safely, and stay out of the user's way. Every MVP feature must improve portability, safety, or maintainability.
+The system automatically detects supported local runtime directories from adapter installation metadata, then sequentially builds, verifies, previews, installs, and verifies only those runtimes that are present.
 
 ## 2. Problem Statement
 
-AI coding runtimes use different instruction filenames, locations, precedence rules, and configuration formats. Maintaining separate instruction systems causes behavior drift, repeated fixes, mixed runtime concerns, manually edited installed files, and unclear traceability.
+AI coding runtimes use different instruction filenames, install locations, and precedence rules. Maintaining separate instruction systems causes behavior drift, repeated fixes, manually edited installed files, and unclear traceability.
 
-Universal Agent System separates shared behavior from runtime delivery mechanics so the same approved instruction model can be generated consistently for multiple runtimes.
+The original low-level tooling solved generation and safe installation, but required users to understand several separate operations and runtime-specific wrappers. The streamlined product direction keeps those safety primitives while reducing the normal user workflow to setup once and sync thereafter.
 
-## 3. MVP Vision
+## 3. Product Vision
 
 Provide a dependable personal-use instruction system in which:
 
 - shared behavior is authored once;
-- each runtime receives a native instruction file;
+- each runtime receives its native instruction file;
 - generated artifacts are deterministic and reviewable;
-- builds never modify active runtime configuration;
-- installation is explicit, backed up, and verifiable;
-- restore is validated and reversible;
-- adding a runtime does not require duplicating shared behavior;
+- supported runtimes are detected automatically;
+- first-time installation is one command;
+- ongoing updates are one command;
+- builds never directly modify active runtime configuration;
+- installation remains backed up, constrained, verifiable, and reversible;
+- multi-runtime orchestration is accurate about sequential, non-transactional behavior;
 - the implementation remains small and understandable.
 
-The MVP is not an enterprise deployment platform, transaction engine, or autonomous-agent framework.
+The product is not an enterprise deployment platform, transaction engine, hosted synchronization service, or autonomous-agent framework.
 
 ## 4. Target User
 
-The primary user is an engineer who uses multiple AI coding runtimes and wants one durable, consistent instruction system across them.
+The primary user is an engineer who uses one or more AI coding runtimes and wants one durable, consistent instruction system across them without manually coordinating separate build and installation commands.
 
-Contributors may also add shared workflows, capabilities, or runtime adapters, but multi-user administration and hosted coordination are outside the MVP.
+Contributors may also extend shared workflows, capabilities, tests, and runtime adapters. Multi-user administration and fleet management remain outside scope.
 
-## 5. MVP Goals
+## 5. Product Goals
 
 The product must:
 
 1. Maintain shared agent behavior in runtime-neutral Markdown modules.
 2. Generate native instruction files for supported runtimes.
-3. Preserve the established discovery, approval, implementation, safety, testing, and reporting lifecycle.
+3. Preserve the discovery, approval, implementation, safety, testing, and reporting lifecycle.
 4. Produce deterministic, inspectable artifacts.
 5. Verify source modules, generated output, and installed files.
-6. Separate building from installation.
-7. Install one runtime at a time as the recommended deployment workflow.
-8. Create durable, hash-verified backups before replacing an existing runtime file.
-9. Restore validated backups with rollback protection.
-10. Reject unsafe install and restore destinations.
-11. Run verification and tests on Windows CI.
-12. Keep day-to-day maintenance understandable and scriptable.
+6. Provide a first-time setup command.
+7. Provide an ongoing synchronization command.
+8. Detect supported runtimes from adapter-defined installation paths.
+9. Install only detected runtimes.
+10. Keep build and installation responsibilities separate internally.
+11. Create hash-verified backups before replacing existing runtime files.
+12. Verify installed hashes after deployment.
+13. Roll back the current runtime when installation fails.
+14. Reject unsafe install and restore destinations.
+15. Keep low-level commands available for development and diagnostics.
+16. Remain compatible with Windows PowerShell 5.1 and PowerShell 7.
 
-## 6. MVP Non-Goals
+## 6. Non-Goals
 
-The MVP will not provide:
+The product will not provide:
 
+- automatic installation of Codex, Claude Code, or Gemini CLI applications;
+- automatic creation of missing runtime directories;
 - a graphical user interface;
 - a hosted synchronization service;
+- background updates, scheduled tasks, daemons, or services;
+- automatic runtime restarts;
 - runtime authentication or credential management;
-- dynamic instruction injection into a running session;
+- dynamic instruction injection into an already running session;
 - enterprise deployment or fleet management;
 - transactional multi-runtime installation;
-- a transaction journal or recovery engine;
+- automatic Git stashing, resetting, cleaning, committing, branch switching, or conflict resolution;
 - structured JSON operation logs;
-- `doctor`, `status`, or recovery dashboards;
 - release signing or formal certification automation;
-- automated requirements traceability tooling;
-- a general-purpose autonomous agent framework.
-
-These features may be reconsidered only when a real user need justifies their complexity.
+- a general-purpose autonomous-agent framework.
 
 ## 7. Design Principles
 
 ### One shared source of truth
 
-Reusable behavior belongs in shared modules, not runtime-specific files.
+Reusable behavior belongs in shared modules, not runtime-specific or installed files.
 
 ### Runtime-native delivery
 
-Each runtime receives the filename and header it expects.
+Each runtime receives the filename, install path, and header it expects.
+
+### Adapter-driven mechanics
+
+Generated output, installation targets, approved roots, and detection directories derive from runtime adapters. High-level scripts must not maintain a second independent runtime path map.
 
 ### Generated artifacts are disposable
 
 Generated files are committed for review and freshness checks but are never edited manually.
 
-### Build and install are separate
+### High-level simplicity, low-level safety
 
-A build writes only to generated output. Installation requires an explicit command.
+Users interact with setup and sync. Those commands orchestrate the existing build, verification, backup, rollback, and installed-hash mechanisms rather than bypassing them.
 
 ### Verify before trust
 
-Source, generated files, and installed targets must be independently verifiable.
+Source, generated output, and installed targets must be independently verifiable.
 
-### Safe, reversible changes
+### Accurate guarantees
 
-Existing runtime files are backed up before replacement. Restore validates backup identity and integrity and protects the pre-restore target.
-
-### Prefer simplicity
-
-The MVP should use the smallest mechanism that satisfies its safety requirements. Complexity is deferred rather than anticipated.
+Sequential orchestration must never be described as a cross-runtime transaction.
 
 ## 8. Core Architecture
 
-Shared behavior lives under:
-
 ```text
-core/
-workflows/
-capabilities/
-memory/
-```
-
-Runtime-specific delivery details live under:
-
-```text
-adapters/
-```
-
-`config/agent.json` defines enabled runtimes and the ordered modules used during generation.
-
-Generated artifacts include:
-
-```text
-generated/codex/AGENTS.md
-generated/claude/CLAUDE.md
-generated/gemini/GEMINI.md
-generated/generic/SYSTEM_PROMPT.md
+Shared modules
+(core/ workflows/ capabilities/ memory/)
+        ↓
+Manifest + runtime adapters
+(config/agent.json + adapters/*.json)
+        ↓
+Deterministic generated artifacts
+(generated/<runtime>/<file>)
+        ↓
+Runtime detection
+(parent of adapter installation.path)
+        ↓
+Sequential refresh workflow
+Build → generated verification → preview → install → installed verification
+        ↓
+Restart guidance for changed runtimes
 ```
 
 Active installed targets are deployed copies of generated artifacts and must not be edited manually.
 
-## 9. Supported Runtimes
+## 9. Supported Runtime Targets
 
-| Runtime | Generated file | Default installed target | MVP status |
-|---|---|---|---|
-| Codex | `generated/codex/AGENTS.md` | `%USERPROFILE%\.codex\AGENTS.md` | Generated, installed, and verified |
-| Claude Code | `generated/claude/CLAUDE.md` | `%USERPROFILE%\.claude\CLAUDE.md` | Generated, installed, and verified |
-| Gemini CLI | `generated/gemini/GEMINI.md` | `%USERPROFILE%\.gemini\GEMINI.md` | Generated and verified; installation remains optional |
-| Generic | `generated/generic/SYSTEM_PROMPT.md` | No default production target | Generated for custom use |
+| Runtime | Adapter ID | Generated file | Installed target | Setup/sync status |
+|---|---|---|---|---|
+| Codex | `codex` | `generated/codex/AGENTS.md` | `%USERPROFILE%\.codex\AGENTS.md` | Detected, installed, verified |
+| Claude Code | `claude` | `generated/claude/CLAUDE.md` | `%USERPROFILE%\.claude\CLAUDE.md` | Detected, installed, verified |
+| Gemini CLI | `gemini` | `generated/gemini/GEMINI.md` | `%USERPROFILE%\.gemini\GEMINI.md` | Detected, installed, verified |
+| Generic | `generic` | `generated/generic/SYSTEM_PROMPT.md` | No default target | Generated only; excluded from automatic setup/sync |
+
+A supported runtime is detected when its adapter is enabled and installable, its resolved target is within an approved root, and the target file's parent runtime directory already exists. The instruction file itself may be absent.
 
 ## 10. Primary User Journeys
 
-### Install a runtime
+### First-time setup
 
-1. Clone or update the repository.
-2. Run source and generated verification.
-3. Build the intended runtime.
-4. Review the generated artifact.
-5. Preview installation with `-WhatIf`.
-6. Install one runtime.
-7. Verify the installed target.
-8. Restart and test the runtime.
-9. Repeat separately for another runtime when needed.
+1. Install and launch at least one supported runtime so its user-level directory exists.
+2. Clone the repository.
+3. Run `setup-agent-system.ps1`.
+4. Review detected runtimes and installation plans.
+5. Allow sequential refresh to complete.
+6. Restart only runtimes reported as changed.
 
-### Change shared behavior
+### Ongoing synchronization
 
-1. Edit shared source or configuration.
-2. Build the affected runtime or all generated outputs.
-3. Verify source and generated artifacts.
-4. Review generated diffs.
-5. Run tests.
-6. Preview and install one runtime at a time.
-7. Verify each installed target.
-8. Commit source and generated changes together.
+1. Run `sync-agent-system.ps1` from the repository.
+2. The command validates Git, branch, and working-tree state.
+3. It runs `git pull --rebase origin main`.
+4. It reloads configuration and detects supported runtime directories.
+5. It refreshes detected runtimes sequentially.
+6. It reports updated, already-current, skipped, failed, and restart-required runtimes.
 
-### Restore a previous file
+### Developer synchronization
 
-1. List available backups.
-2. Preview the selected restore.
-3. Validate the backup manifest, hash, runtime, and original target identity.
-4. Preserve the current target before replacement.
-5. Restore the selected backup.
-6. Verify the restored file.
-7. Roll back automatically if restore replacement or verification fails.
+Use:
+
+```powershell
+.\scripts\sync-agent-system.ps1 -SkipPull
+```
+
+This uses the current checkout while preserving manifest, adapter, build, verification, and installation validation.
+
+### Advanced targeted operation
+
+Developers may still invoke build, verify, install, and restore commands for one runtime when diagnosing or testing a specific layer.
 
 ## 11. Functional Requirements
 
 ### FR-1: Shared module authoring
 
-Agent behavior must be maintained in ordered Markdown modules independent of runtime-specific home paths or filenames.
+Agent behavior must be maintained in ordered runtime-neutral modules.
 
 ### FR-2: Deterministic generation
 
-Unchanged source, configuration, and adapters must produce byte-equivalent generated artifacts.
+Unchanged source, configuration, and adapters must produce byte-equivalent artifacts.
 
 ### FR-3: Runtime adapters
 
-Each supported runtime must define output file, install path, title, and runtime header through an adapter.
+Each runtime must define output, install path, approved roots, document title, and runtime header through an adapter.
 
-### FR-4: Source traceability
+### FR-4: Runtime detection
 
-Generated artifacts must include a generated-file warning and source markers.
+Setup and sync must detect Codex, Claude Code, and Gemini CLI from adapter-derived runtime directories and must not create missing directories.
 
-### FR-5: Build isolation
+### FR-5: First-time setup
 
-Build commands must write only to generated output locations.
+`setup-agent-system.ps1` must validate configuration, detect supported runtimes, process only detected runtimes, and return a distinct non-zero exit when none are detected.
 
-### FR-6: Verification scopes
+### FR-6: Ongoing synchronization
 
-Verification must support source, generated, and installed scopes and return a non-zero exit code on failure.
+`sync-agent-system.ps1` must, by default, validate Git state, run `git pull --rebase origin main`, reload configuration, and refresh detected runtimes.
 
-### FR-7: Freshness detection
+### FR-7: Git safety
 
-The system must detect generated artifacts that differ from a clean rebuild.
+Default sync must require Git, branch `main`, and a clean working tree including untracked files. It must not modify local work to satisfy those preconditions.
 
-### FR-8: Installation preview
+### FR-8: Developer override
 
-Users must be able to preview installation without changing files.
+`-SkipPull` must bypass pull-specific checks while preserving all non-Git validation and refresh behavior.
 
-### FR-9: Safe target validation
+### FR-9: Preview and confirmation
 
-Installation and restore must reject paths outside approved runtime roots and must defend against path traversal and unsafe filesystem redirection such as reparse points.
+High-level commands must support `-WhatIf`, `-Confirm`, and `-Force` consistently with documented PowerShell semantics.
 
-### FR-10: Durable backup creation
+### FR-10: Sequential orchestration
 
-When a target exists, the installer must create and hash-verify a timestamped backup and persist its manifest before modifying the target.
+Detected runtimes must be processed in deterministic order: Codex, Claude Code, Gemini CLI. The workflow must stop on the first failure and report earlier success accurately.
 
-### FR-11: Installed hash verification
+### FR-11: Safe target validation
 
-After installation, the active runtime file must match the selected generated artifact.
+Installation and restore must reject targets outside approved roots and unsafe filesystem redirection such as reparse points.
 
-### FR-12: Validated restore
+### FR-12: Backup and rollback
 
-Restore must validate manifest structure, runtime identity, original target identity, and backup hash before replacement.
+Existing targets must be backed up and hash-verified before replacement. A failed current-runtime installation must restore or remove the affected target according to the existing installer contract.
 
-### FR-13: Restore rollback
+### FR-13: Installed verification
 
-If restore replacement or post-restore verification fails, the previous target must be reinstated and verified.
+After installation, the deployed runtime file must match the selected generated artifact.
 
-### FR-14: Test isolation
+### FR-14: Restart guidance
 
-Automated tests must operate in temporary directories and must never modify real runtime configuration files.
+Final output should list only runtimes whose installed files changed.
 
-### FR-15: Accurate guarantees
+### FR-15: Test isolation
 
-Documentation must describe replacement and multi-runtime behavior conservatively. The MVP must not claim atomic or transactional guarantees that are not implemented and tested.
+Automated tests must use sandbox repositories and temporary target maps and must never modify real runtime configuration files.
 
-### FR-16: Windows CI
+### FR-16: Backward compatibility
 
-CI must run deterministic build checks, verification, and tests on supported Windows PowerShell environments.
+Low-level build, verify, install, restore, and compatibility wrapper commands must remain available unless separately deprecated and approved.
 
-## 12. Installation Semantics
+## 12. Command Contracts
 
-The supported MVP deployment workflow is one runtime per install command.
+### Setup
 
-`-Runtime All` may remain available for build and verification. Where installation still accepts `-Runtime All`, it is sequential and non-transactional: an earlier runtime may be updated before a later runtime fails. Documentation and command output must make this limitation clear.
+```powershell
+.\scripts\setup-agent-system.ps1
+.\scripts\setup-agent-system.ps1 -WhatIf
+.\scripts\setup-agent-system.ps1 -Force
+.\scripts\setup-agent-system.ps1 -Confirm
+```
 
-Transactional multi-runtime installation is explicitly deferred.
+### Sync
 
-## 13. MVP Hardening Backlog
+```powershell
+.\scripts\sync-agent-system.ps1
+.\scripts\sync-agent-system.ps1 -SkipPull
+.\scripts\sync-agent-system.ps1 -WhatIf
+.\scripts\sync-agent-system.ps1 -Force
+.\scripts\sync-agent-system.ps1 -Confirm
+```
 
-The following work defines the approved MVP hardening direction:
+### Exit codes
 
-1. Persist backup manifests before target modification.
-2. Add verified rollback to restore operations.
-3. Enforce restore destination identity from the backup manifest.
-4. Harden runtime target validation, including reparse-point defenses.
-5. Add strict backup manifest validation.
-6. Correct documentation that overstates replacement atomicity.
-7. Add Windows CI for build freshness, verification, and tests.
-8. Add targeted failure-path tests for install, backup, replacement, and restore.
-9. Keep installation operationally one runtime at a time; do not add a transaction engine for the MVP.
+| Exit code | Meaning |
+|---|---|
+| `0` | All intended operations succeeded; already-current files count as success |
+| `1` | Validation, build, verification, installation, or unexpected failure |
+| `2` | No supported runtime detected |
+| `3` | Git precondition or pull failure |
+
+## 13. Installation Semantics
+
+The user-facing setup and sync commands may update multiple detected runtimes, but they do so one runtime at a time.
+
+If Codex succeeds and Claude Code fails:
+
+- Codex remains updated;
+- Gemini CLI is not attempted;
+- the final output must report the partial result accurately;
+- there is no rollback of previously completed runtimes.
+
+Transactional multi-runtime installation remains explicitly deferred.
 
 ## 14. Non-Functional Requirements
 
 ### Reliability
 
-- builds are deterministic;
-- validation failures stop installation or restore;
-- scripts return meaningful exit codes;
-- installed files are hash-verified;
-- corrupt backups are rejected;
-- restore rollback is verified.
+- deterministic builds;
+- meaningful exit codes;
+- fail-fast orchestration;
+- installed hash verification;
+- verified backups and rollback behavior;
+- accurate partial-success reporting.
 
 ### Safety
 
-- installation is explicit;
-- previews do not write files;
-- targets are constrained to approved runtime roots;
-- backup metadata is durable before replacement;
+- detection is read-only;
+- missing runtime directories are never created automatically;
+- previews do not pull or install;
+- Git sync does not alter local work;
+- targets remain constrained to approved runtime roots;
 - tests never access production runtime paths.
 
 ### Maintainability
 
-- shared behavior remains modular;
 - adapters remain small and runtime-focused;
-- generated files retain source traceability;
-- documentation distinguishes implemented guarantees from future ideas;
-- new infrastructure is not added without a demonstrated need.
+- detection and refresh logic are shared libraries;
+- setup and sync do not duplicate runtime paths or workflow logic;
+- low-level commands remain independently usable;
+- documentation consistently distinguishes user-facing and advanced workflows.
 
 ### Compatibility
 
-- scripts support Windows PowerShell 5.1 and PowerShell 7;
-- the repository remains usable without mandatory external test dependencies;
-- runtime-specific differences do not leak into shared behavior unless unavoidable.
+- Windows PowerShell 5.1 and PowerShell 7;
+- no mandatory external test framework;
+- fixed Git argument tokens rather than interpolated shell command strings.
 
-## 15. MVP Success Criteria
+## 15. Success Criteria
 
-The MVP hardening release is complete when:
+The streamlined workflow is complete when:
 
-- repeated clean builds are deterministic;
-- verification passes for all enabled adapters and modules;
-- Codex and Claude Code can be installed safely one runtime at a time;
-- an existing target is backed up and its manifest is durable before replacement;
-- unsafe or mismatched restore destinations are rejected;
-- failed restore operations reinstate and verify the pre-restore target;
-- Windows CI passes on the supported PowerShell versions;
-- targeted failure-path tests pass;
-- documentation accurately describes sequential, non-transactional multi-runtime behavior;
-- a new contributor can complete installation and recovery using the documentation.
-
-The intended quality target is a polished, maintainable MVP rather than maximum enterprise-grade complexity.
+- first-time setup succeeds for any detected combination of Codex, Claude Code, and Gemini CLI;
+- setup exits safely when no runtime directory exists;
+- normal sync safely pulls `origin/main` and refreshes detected runtimes;
+- dirty or wrong-branch working trees are rejected without modification;
+- `-SkipPull`, `-WhatIf`, `-Force`, and `-Confirm` behave as documented;
+- runtime detection derives from adapter metadata;
+- changed runtimes receive restart guidance;
+- automated tests use only temporary runtime targets;
+- README, PRD, installation, operations, adapter, specification, and implementation documents describe the same product model.
 
 ## 16. Current Implementation Status
 
-Version 1.0.0 includes:
+Implemented:
 
-- shared runtime-neutral modules;
+- shared runtime-neutral instruction modules;
 - adapters for Codex, Claude Code, Gemini CLI, and Generic;
-- deterministic PowerShell build tooling;
-- source, generated, installed, and behavioral-anchor verification;
-- timestamped SHA-256-verified backups;
-- installation and restore scripts with approved-path checks and `-WhatIf` support;
-- a Pester-independent test suite;
-- product, installation, operations, adapter, and migration documentation.
+- deterministic build and verification tooling;
+- approved-root installation, backups, rollback, restore, and installed-hash verification;
+- adapter-driven runtime detection;
+- shared refresh orchestration;
+- `setup-agent-system.ps1`;
+- `sync-agent-system.ps1` with Git safety and `-SkipPull`;
+- setup/sync test coverage using sandbox repositories and temporary targets;
+- compatibility low-level and runtime-specific commands.
 
-Codex and Claude Code have been installed and verified. Gemini output is generated and verified, while production installation remains optional.
-
-The MVP hardening backlog remains proposed until approved and implemented work is verified.
+The setup and sync commands are the recommended product entry points. Manual build/install commands remain advanced tools rather than the normal user journey.
 
 ## 17. Known Limitations
 
-Until the hardening backlog is complete:
+- Multi-runtime refresh is sequential and non-transactional.
+- Runtime applications must be installed and launched separately.
+- Missing runtime directories are not created automatically.
+- Active runtime sessions are not restarted automatically.
+- Git synchronization supports the approved `main` and `origin/main` workflow only.
+- There is no background updater, hosted synchronization, dashboard, or enterprise deployment layer.
 
-- backup manifest durability during partial failure needs strengthening;
-- restore rollback is not yet fully verified;
-- restore target identity validation needs strengthening;
-- filesystem-aware path validation needs reparse-point protection;
-- replacement should not be described as atomic;
-- multi-runtime installation is sequential and not transactional;
-- Windows CI coverage needs to be added.
+## 18. Deferred Ideas
 
-Install and verify one runtime at a time.
-
-## 18. Deferred Post-MVP Ideas
-
-The following are intentionally deferred:
-
+- additional runtime adapters such as Copilot CLI, Cursor, Continue, Aider, and xAI;
 - transactional multi-runtime installation;
 - transaction journals and interrupted-operation recovery;
 - structured operation records;
 - backup retention management;
-- `doctor`, `status`, or recovery commands;
-- native Windows replacement APIs;
-- formal threat-model tooling;
+- `doctor`, `status`, and recovery dashboards;
 - release signing and certification automation;
-- requirements traceability automation;
-- hosted synchronization or enterprise administration.
+- hosted synchronization and enterprise administration.
 
-Deferred items are not commitments. They require separate discovery and approval.
+Deferred items require separate discovery and approval.
 
 ## 19. Product Boundaries and Governance
 
 - Shared modules are authoritative for reusable behavior.
-- Runtime files are generated deployment artifacts.
-- Project-level repository instructions remain authoritative within their own scope according to runtime precedence rules.
-- Installation does not imply approval to implement project work.
+- Runtime adapters are authoritative for delivery mechanics.
+- Generated files are reviewable build artifacts.
+- Installed files are deployed copies.
+- Setup and sync do not install runtime applications.
+- Installation does not imply approval to implement unrelated project work.
 - Discovery, approval, implementation, verification, and durable context maintenance remain separate lifecycle stages.
-- Security-sensitive changes require explicit review and approval.
-
-## 20. Related Documentation
-
-- [Installation Guide](INSTALLATION.md)
-- [Operations Guide](OPERATIONS.md)
-- [Runtime Adapter Guide](RUNTIME_ADAPTER_GUIDE.md)
-- [Migration Report](MIGRATION_REPORT.md)
