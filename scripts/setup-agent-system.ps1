@@ -47,10 +47,19 @@ try {
     $detection = @(Get-DetectedAgentRuntimes -RepoRoot $repoRoot -RuntimeIds $runtimeIds)
     Show-AgentRuntimeDetection -Results $detection
 
-    if (@($detection | Where-Object { $_.Detected }).Count -eq 0) {
+    $detectedNames = @($detection | Where-Object { $_.Detected } | ForEach-Object { $_.DisplayName })
+    if ($detectedNames.Count -eq 0) {
         Write-Fail 'No supported runtime directories were detected.'
         Write-Host 'Install and launch Codex, Claude Code, or Gemini CLI first. No runtime folders were created.' -ForegroundColor Yellow
         exit 2
+    }
+
+    if (-not $WhatIfPreference) {
+        $target = $detectedNames -join ', '
+        if (-not $PSCmdlet.ShouldProcess($target, 'Build, verify, install, and verify Agent System instructions')) {
+            Write-Info 'Setup cancelled.'
+            exit 0
+        }
     }
 
     $refresh = Invoke-AgentSystemRefresh -RepoRoot $repoRoot -RuntimeRecords $detection -Mode Setup -Force:$Force -WhatIf:$WhatIfPreference
